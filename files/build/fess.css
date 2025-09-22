@@ -82,6 +82,11 @@
             width: 10px;
             height: 10px;
         }
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         .window-resizer.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
         .window-resizer.top-right { top: -5px; right: -5px; cursor: nesw-resize; }
         .window-resizer.bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
@@ -137,4 +142,27 @@
         }
         .dark .context-menu-item:hover {
             background-color: var(--taskbar-dark);
+        }
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 10px;
+            border: 3px solid #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #555 #374151;
         }
