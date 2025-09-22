@@ -1,0 +1,140 @@
+        :root {
+           
+            --bg-light: #f5f5f5;
+            --text-light: #1f2937;
+            --taskbar-light: rgba(255, 255, 255, 0.9);
+            --taskbar-border-light: #e5e7eb;
+            --window-bg-light: rgba(249, 250, 251, 0.8);
+            --window-border-light: #e5e7eb;
+            --window-shadow-light: rgba(0, 0, 0, 0.1);
+        }
+        .dark {
+           
+            --bg-dark: #1f2937;
+            --text-dark: #f3f4f6;
+            --taskbar-dark: rgba(31, 32, 34, 0.9);
+            --taskbar-border-dark: #374151;
+            --window-bg-dark: rgba(55, 65, 81, 0.8);
+            --window-border-dark: #374151;
+            --window-shadow-dark: rgba(0, 0, 0, 0.2);
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease;
+        }
+        body.light {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+        body.dark {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+        .theme-taskbar.light {
+            background-color: var(--taskbar-light);
+            border-top: 1px solid var(--taskbar-border-light);
+        }
+        .theme-taskbar.dark {
+            background-color: var(--taskbar-dark);
+            border-top: 1px solid var(--taskbar-border-dark);
+        }
+        .theme-window.light {
+            background-color: var(--window-bg-light);
+            border: 1px solid var(--window-border-light);
+            box-shadow: 0 10px 15px -3px var(--window-shadow-light), 0 4px 6px -2px var(--window-shadow-light);
+        }
+        .theme-window.dark {
+            background-color: var(--window-bg-dark);
+            border: 1px solid var(--window-border-dark);
+            box-shadow: 0 10px 15px -3px var(--window-shadow-dark), 0 4px 6px -2px var(--window-shadow-dark);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(0.95); }
+            to { opacity: 0; transform: scale(0.9); }
+        }
+        .window-close-anim {
+            animation: windowClose 0.3s ease-in-out forwards;
+        }
+        @keyframes windowClose {
+            from { transform: scale(1); opacity: 1; }
+            to { transform: scale(0.8); opacity: 0; }
+        }
+        .window-drag-handle {
+            cursor: grab;
+        }
+        .window-resizer {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+        }
+        .window-resizer.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+        .window-resizer.top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+        .window-resizer.bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .window-resizer.bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
+        .spinning-box {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+       
+        #trashBin.active {
+            transform: scale(1.1);
+            background-color: rgba(255, 0, 0, 0.2);
+            border: 2px dashed #f87171;
+        }
+       
+        .app-icon {
+            cursor: grab;
+            transition: transform 0.1s ease-in-out;
+        }
+        .app-icon.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        .context-menu {
+            position: absolute;
+            background-color: var(--window-bg-light);
+            border: 1px solid var(--window-border-light);
+            padding: 4px;
+            border-radius: 8px;
+            z-index: 10000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .dark .context-menu {
+            background-color: var(--window-bg-dark);
+            border: 1px solid var(--window-border-dark);
+        }
+        .context-menu-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .context-menu-item:hover {
+            background-color: var(--taskbar-light);
+        }
+        .dark .context-menu-item:hover {
+            background-color: var(--taskbar-dark);
+        }
