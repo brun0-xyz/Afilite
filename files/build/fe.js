@@ -283,7 +283,7 @@
             iconEl.setAttribute('draggable', 'true');
             iconEl.setAttribute('data-app-id', app.id);
             iconEl.innerHTML = `
-                <img src="${app.icon}" class="w-12 h-12 mb-1 pointer-events-none" alt="${app.name} Icon">
+                <img src="${app.icon}" class="w-12 h-12 mb-1 pointer-events-none rounded-[15px]" alt="${app.name} Icon">
                 <span class="text-sm text-center w-20 truncate" title="${app.name}">${app.name}</span>
             `;
             appContainerEl.appendChild(iconEl);
@@ -336,229 +336,280 @@
             }
         });
 
-        const renderApps = () => {
-            appContainerEl.innerHTML = '';
+        // ================= DESKTOP ICONS =================
+const renderApps = () => {
+    appContainerEl.innerHTML = '';
 
-            const iconSize = 80; 
-            const padding = 20;
-            const containerWidth = appContainerEl.offsetWidth;
-            const iconsPerRow = Math.floor(containerWidth / (iconSize + padding));
+    const iconSize = 80; 
+    const padding = 20;
+    const containerWidth = appContainerEl.offsetWidth;
+    const iconsPerRow = Math.floor(containerWidth / (iconSize + padding));
 
-            installedApps.forEach((app, index) => {
-                const col = index % iconsPerRow;
-                const row = Math.floor(index / iconsPerRow);
-                const x = padding + col * (iconSize + padding);
-                const y = padding + row * (iconSize + padding);
-                createIcon(app, x, y);
-            });
-        };
+    installedApps.forEach((app, index) => {
+        const col = index % iconsPerRow;
+        const row = Math.floor(index / iconsPerRow);
+        const x = padding + col * (iconSize + padding);
+        const y = padding + row * (iconSize + padding);
+        createIcon(app, x, y);
+    });
+};
 
-        const renderPinnedApps = () => {
-            pinnedAppsTaskbarEl.innerHTML = '';
-            pinnedApps.forEach(app => {
-                const taskbarItem = createTaskbarItem(app, true);
-                pinnedAppsTaskbarEl.appendChild(taskbarItem);
-            });
-        };
+// ================= TASKBAR =================
+const renderPinnedApps = () => {
+    pinnedAppsTaskbarEl.innerHTML = '';
+    pinnedApps.forEach(app => {
+        const taskbarItem = createTaskbarItem(app, true);
+        pinnedAppsTaskbarEl.appendChild(taskbarItem);
+    });
+};
 
-        const bringToFront = (windowEl) => {
-            if (!windowEl) return;
-            highestZIndex++;
-            windowEl.style.zIndex = highestZIndex;
+const bringToFront = (windowEl) => {
+    if (!windowEl) return;
+    highestZIndex++;
+    windowEl.style.zIndex = highestZIndex;
 
-            document.querySelectorAll('.window').forEach(win => win.classList.remove('active-window'));
-            windowEl.classList.add('active-window');
-        };
+    document.querySelectorAll('.window').forEach(win => win.classList.remove('active-window'));
+    windowEl.classList.add('active-window');
+};
 
-        const createTaskbarItem = (app, isPinned = false) => {
-            const taskbarItem = document.createElement('button');
-            taskbarItem.id = `taskbar-item-${app.id}`;
-            taskbarItem.className = 'taskbar-item p-2 rounded-xl transition-colors duration-200';
-            taskbarItem.innerHTML = `<img src="${app.icon}" class="w-8 h-8 pointer-events-none" alt="${app.name} icon">`;
-            if(isPinned) {
-                taskbarItem.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-700');
-            } else {
-                taskbarItem.classList.add('bg-gray-200', 'dark:bg-gray-700');
+// ================= TASKBAR ITEM =================
+const createTaskbarItem = (app) => {
+    // prevent duplicates
+    if (document.getElementById(`taskbar-item-${app.id}`)) {
+        return document.getElementById(`taskbar-item-${app.id}`);
+    }
+
+    const taskbarItem = document.createElement('button');
+    taskbarItem.id = `taskbar-item-${app.id}`;
+    taskbarItem.className = 'taskbar-item p-2 rounded-xl transition-colors duration-200';
+    taskbarItem.innerHTML = `<img src="${app.icon}" class="w-8 h-8 rounded-[15px]" alt="${app.name}">`;
+
+    taskbarItem.addEventListener('click', () => {
+        const win = activeWindows[app.id];
+        if (win) {
+            if (win.classList.contains('hidden')) {
+                win.classList.remove('hidden');
             }
+            bringToFront(win);
+        } else {
+            launchApp(app);
+        }
+    });
 
-            taskbarItem.addEventListener('click', () => {
-                const win = activeWindows[app.id];
-                if (win) {
-                    if (win.classList.contains('hidden')) {
-                        win.classList.remove('hidden');
-                    }
-                    bringToFront(win);
+    taskbarItem.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        createContextMenu(app.id, 'taskbar-item', e.clientX, e.clientY);
+    });
 
-                    win.style.left = '0px';
-                    win.style.top = '0px';
-                } else if (isPinned) {
-                    launchApp(app);
-                }
-            });
+    return taskbarItem;
+};
 
-            taskbarItem.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                createContextMenu(app.id, 'taskbar-item', e.clientX, e.clientY);
-            });
+// ================= WINDOW LOGIC =================
+const closeWindow = (appId) => {
+    const win = activeWindows[appId];
+    if (win) win.classList.add('hidden');
 
-            return taskbarItem;
-        };
+    if (!pinnedApps.find(a => a.id === appId)) {
+        const taskbarItem = document.getElementById(`taskbar-item-${appId}`);
+        if (taskbarItem) taskbarItem.remove();
+        delete activeWindows[appId];
+    }
+};
 
-        const closeApp = (appId) => {
-            const windowEl = activeWindows[appId];
-            if (windowEl) {
-                windowEl.classList.add('window-close-anim');
-                setTimeout(() => {
-                    windowEl.remove();
-                    delete activeWindows[appId];
-                }, 300);
-            }
-            const taskbarItem = document.getElementById(`taskbar-item-${appId}`);
-            if (taskbarItem && !pinnedApps.some(app => app.id === appId)) {
-                taskbarItem.remove();
-            }
-            hideContextMenu();
-        };
+const closeApp = (appId) => {
+    const windowEl = activeWindows[appId];
+    if (windowEl) {
+        windowEl.classList.add('window-close-anim');
+        setTimeout(() => {
+            windowEl.remove();
+            delete activeWindows[appId];
+        }, 300);
+    }
+    const taskbarItem = document.getElementById(`taskbar-item-${appId}`);
+    if (taskbarItem && !pinnedApps.some(app => app.id === appId)) {
+        taskbarItem.remove();
+    }
+    hideContextMenu();
+};
 
-        const pinApp = (appId) => {
-            const app = [...allApps.apps, ...allApps.games, settingsApp].find(a => a.id === appId);
-            if (app && !pinnedApps.some(a => a.id === appId)) {
-                pinnedApps.push(app);
-                localStorage.setItem('pinnedApps', JSON.stringify(pinnedApps));
-                renderPinnedApps();
-            }
-            hideContextMenu();
-        };
+// ================= PIN / UNPIN =================
+const pinApp = (appId) => {
+    const app = [...allApps.apps, ...allApps.games, settingsApp].find(a => a.id === appId);
+    if (app && !pinnedApps.some(a => a.id === appId)) {
+        pinnedApps.push(app);
+        localStorage.setItem('pinnedApps', JSON.stringify(pinnedApps));
+        renderPinnedApps();
+    }
+    hideContextMenu();
+};
 
-        const unpinApp = (appId) => {
-            if (appId === settingsApp.id) return; 
-            const index = pinnedApps.findIndex(a => a.id === appId);
-            if (index > -1) {
-                pinnedApps.splice(index, 1);
-                localStorage.setItem('pinnedApps', JSON.stringify(pinnedApps));
-                renderPinnedApps();
-            }
-            hideContextMenu();
-        };
+const unpinApp = (appId) => {
+    const index = pinnedApps.findIndex(a => a.id === appId);
+    if (index > -1) {
+        pinnedApps.splice(index, 1);
+        localStorage.setItem('pinnedApps', JSON.stringify(pinnedApps));
+        renderPinnedApps();
+    }
+
+    // ✅ also remove taskbar button if the app is NOT open
+    if (!activeWindows[appId]) {
+        const taskbarItem = document.getElementById(`taskbar-item-${appId}`);
+        if (taskbarItem) taskbarItem.remove();
+    }
+
+    hideContextMenu();
+};
+
+
+
 
         const createDraggableWindow = (app) => {
-            const windowId = `window-${app.id}`;
-            if (document.getElementById(windowId)) {
-                bringToFront(document.getElementById(windowId));
-                return;
-            }
+    const windowId = `window-${app.id}`;
+    if (document.getElementById(windowId)) {
+        bringToFront(document.getElementById(windowId));
+        return;
+    }
 
-            const windowEl = document.createElement('div');
-            windowEl.id = windowId;
-            windowEl.className = `window theme-window absolute rounded-xl shadow-2xl overflow-hidden transition-all duration-300 pointer-events-auto flex flex-col ${setupData.theme}`;
+    const windowEl = document.createElement('div');
+    windowEl.id = windowId;
+    windowEl.className = `window theme-window absolute rounded-xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col ${setupData.theme}`;
+    windowEl.style.width = '700px';
+    windowEl.style.height = '500px';
+
+    // Start centered
+    let currentX = (window.innerWidth - 700) / 2;
+    let currentY = (window.innerHeight - 500) / 2;
+    windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    bringToFront(windowEl);
+
+    const contentHTML = app.src
+        ? `<iframe src="${app.src}" class="w-full h-full border-none"></iframe>`
+        : `<div class="p-4 text-center text-gray-500 dark:text-gray-400">Content for ${app.name} goes here.</div>`;
+
+    windowEl.innerHTML = `
+        <div class="window-drag-handle flex items-center justify-between p-3 rounded-t-xl bg-gray-200 dark:bg-gray-800 cursor-grab select-none" style="touch-action: none;">
+            <div class="flex items-center space-x-2">
+                <img src="${app.icon}" class="w-7 h-7" alt="${app.name} Icon">
+                <span class="font-semibold text-sm truncate">${app.name}</span>
+            </div>
+            <div class="flex space-x-2">
+                <button class="minimize-btn w-9 h-9 bg-yellow-400 rounded-full hover:scale-110 transition-transform"></button>
+                <button class="maximize-btn w-9 h-9 bg-green-500 rounded-full hover:scale-110 transition-transform"></button>
+                <button class="close-btn w-9 h-9 bg-red-500 rounded-full hover:scale-110 transition-transform"></button>
+            </div>
+        </div>
+        <div class="flex-grow p-2 overflow-auto bg-white dark:bg-gray-700">
+            ${contentHTML}
+        </div>
+        <div class="window-resizer bottom-right"></div>
+    `;
+    windowContainerEl.appendChild(windowEl);
+
+    // --- OPENING FADE-IN ---
+    windowEl.style.opacity = "0";
+    windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
+    windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+
+    requestAnimationFrame(() => {
+        windowEl.style.opacity = "1";
+        windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(1)`;
+    });
+
+    // --- DRAGGING (mouse + touch, no glide) ---
+    let isDragging = false;
+    let dragOffsetX = 0, dragOffsetY = 0;
+
+    const dragHandle = windowEl.querySelector('.window-drag-handle');
+
+    const startDrag = (clientX, clientY) => {
+        if (windowEl.classList.contains('maximized')) return;
+        bringToFront(windowEl);
+        isDragging = true;
+        dragOffsetX = clientX - currentX;
+        dragOffsetY = clientY - currentY;
+    };
+
+    const moveDrag = (clientX, clientY) => {
+        if (!isDragging) return;
+        currentX = clientX - dragOffsetX;
+        currentY = clientY - dragOffsetY;
+        windowEl.style.transition = "none";
+        windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    };
+
+    const endDrag = () => { isDragging = false; };
+
+    // Mouse
+    dragHandle.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch
+    dragHandle.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        startDrag(t.clientX, t.clientY);
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const t = e.touches[0];
+        moveDrag(t.clientX, t.clientY);
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', endDrag);
+
+    // --- CONTROLS ---
+    // Close (fade-out + unpin properly)
+    windowEl.querySelector('.close-btn').addEventListener('click', () => {
+        windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+        windowEl.style.opacity = "0";
+        windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
+
+        setTimeout(() => {
+            closeApp(app.id); // unpins + removes
+            if (activeWindows[app.id]) delete activeWindows[app.id];
+            windowEl.remove();
+        }, 250);
+    });
+
+    // Minimize
+    windowEl.querySelector('.minimize-btn').addEventListener('click', () => {
+        windowEl.classList.add('hidden');
+    });
+
+    // Maximize / Restore
+    const maximizeBtn = windowEl.querySelector('.maximize-btn');
+    const toggleMaximize = () => {
+        if (windowEl.classList.contains('maximized')) {
+            // Restore
+            windowEl.classList.remove('maximized');
+            windowEl.style.transition = "all 0.25s ease";
             windowEl.style.width = '700px';
             windowEl.style.height = '500px';
-            windowEl.style.top = `${Math.random() * (window.innerHeight - 600) + 50}px`;
-            windowEl.style.left = `${Math.random() * (window.innerWidth - 800) + 50}px`;
-            bringToFront(windowEl);
+            currentX = (window.innerWidth - 700) / 2;
+            currentY = (window.innerHeight - 500) / 2;
+            windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+        } else {
+            // Maximize
+            windowEl.classList.add('maximized');
+            windowEl.style.transition = "all 0.25s ease";
+            windowEl.style.width = '100vw';
+            windowEl.style.height = '100vh';
+            currentX = 0;
+            currentY = 0;
+            windowEl.style.transform = `translate(0px, 0px)`;
+        }
+    };
+    maximizeBtn.addEventListener('click', toggleMaximize);
+    dragHandle.addEventListener('dblclick', toggleMaximize);
 
-            const contentHTML = app.src ?
-                `<iframe src="${app.src}" class="w-full h-full border-none"></iframe>` :
-                `<div class="p-4 text-center text-gray-500 dark:text-gray-400">Content for ${app.name} goes here.</div>`;
+    // Register window
+    activeWindows[app.id] = windowEl;
+};
 
-            windowEl.innerHTML = `
-                <!-- Window header -->
-                <div class="window-drag-handle flex items-center justify-between p-2 rounded-t-xl bg-gray-200 dark:bg-gray-800 cursor-grab">
-                    <div class="flex items-center space-x-2">
-                        <img src="${app.icon}" class="w-6 h-6" alt="${app.name} Icon">
-                        <span class="font-semibold text-sm truncate">${app.name}</span>
-                    </div>
-                    <!-- Window controls -->
-                    <div class="flex space-x-1">
-                        <button class="minimize-btn w-3 h-3 bg-yellow-400 rounded-full hover:scale-110 transition-transform"></button>
-                        <button class="maximize-btn w-3 h-3 bg-green-500 rounded-full hover:scale-110 transition-transform"></button>
-                        <button class="close-btn w-3 h-3 bg-red-500 rounded-full hover:scale-110 transition-transform"></button>
-                    </div>
-                </div>
-                <!-- Window content area -->
-                <div class="flex-grow p-2 overflow-auto bg-white dark:bg-gray-700">
-                    ${contentHTML}
-                </div>
-                <!-- Resizer handles -->
-                <div class="window-resizer top-left"></div>
-                <div class="window-resizer top-right"></div>
-                <div class="window-resizer bottom-left"></div>
-                <div class="window-resizer bottom-right"></div>
-            `;
-            windowContainerEl.appendChild(windowEl);
-            windowEl.classList.add('fade-in');
 
-            let isDragging = false;
-            let isResizing = false;
-            let currentResizer = null;
-            let offsetX, offsetY;
-            let startX, startY, startWidth, startHeight;
-
-            const onMouseDown = (e) => {
-                bringToFront(windowEl);
-                if (e.target.classList.contains('window-drag-handle')) {
-                    isDragging = true;
-                    offsetX = e.clientX - windowEl.offsetLeft;
-                    offsetY = e.clientY - windowEl.offsetTop;
-                } else if (e.target.classList.contains('window-resizer')) {
-                    isResizing = true;
-                    currentResizer = e.target;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    startWidth = parseInt(document.defaultView.getComputedStyle(windowEl).width, 10);
-                    startHeight = parseInt(document.defaultView.getComputedStyle(windowEl).height, 10);
-                }
-            };
-
-            const onMouseMove = (e) => {
-                if (isDragging) {
-                    let x = e.clientX - offsetX;
-                    let y = e.clientY - offsetY;
-                    windowEl.style.left = `${x}px`;
-                    windowEl.style.top = `${y}px`;
-                } else if (isResizing) {
-                    if (currentResizer.classList.contains('bottom-right')) {
-                        windowEl.style.width = `${startWidth + e.clientX - startX}px`;
-                        windowEl.style.height = `${startHeight + e.clientY - startY}px`;
-                    }
-
-                }
-            };
-
-            const onMouseUp = () => {
-                isDragging = false;
-                isResizing = false;
-            };
-
-            windowEl.addEventListener('mousedown', onMouseDown);
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-
-            windowEl.querySelector('.close-btn').addEventListener('click', () => {
-                closeApp(app.id);
-            });
-
-            windowEl.querySelector('.minimize-btn').addEventListener('click', () => {
-                windowEl.classList.add('hidden');
-            });
-
-            windowEl.querySelector('.maximize-btn').addEventListener('click', () => {
-
-                if (windowEl.style.top === '0px' && windowEl.style.left === '0px' && windowEl.style.width === '100vw' && windowEl.style.height === '100vh') {
-                    windowEl.style.top = `${Math.random() * (window.innerHeight - 600) + 50}px`;
-                    windowEl.style.left = `${Math.random() * (window.innerWidth - 800) + 50}px`;
-                    windowEl.style.width = '700px';
-                    windowEl.style.height = '500px';
-                } else {
-                    windowEl.style.top = '0px';
-                    windowEl.style.left = '0px';
-                    windowEl.style.width = '100vw';
-                    windowEl.style.height = '100vh';
-                }
-            });
-
-            activeWindows[app.id] = windowEl;
-        };
 
         const createSettingsWindow = () => {
             const windowId = 'window-settings';
@@ -691,84 +742,188 @@
             windowContainerEl.appendChild(windowEl);
             windowEl.classList.add('fade-in');
 
-            activeWindows.settings = windowEl;
+            // ================= SETTINGS WINDOW WITH BIG BUTTONS + TOUCH DRAG =================
+activeWindows.settings = windowEl;
 
-            document.getElementById(`settings${setupData.theme.charAt(0).toUpperCase() + setupData.theme.slice(1)}ThemeBox`).classList.add('border-blue-500');
-            const currentWallpaperThumb = document.querySelector(`.settings-wallpaper-thumb[data-src="${setupData.wallpaper}"]`);
-            if (currentWallpaperThumb) {
-                currentWallpaperThumb.classList.add('border-blue-500');
-            }
+document.getElementById(
+  `settings${setupData.theme.charAt(0).toUpperCase() + setupData.theme.slice(1)}ThemeBox`
+).classList.add("border-blue-500");
 
-            document.getElementById('settingsTitleInput').value = document.title;
-            document.getElementById('settingsFaviconInput').value = document.getElementById('favicon').href;
+const currentWallpaperThumb = document.querySelector(
+  `.settings-wallpaper-thumb[data-src="${setupData.wallpaper}"]`
+);
+if (currentWallpaperThumb) currentWallpaperThumb.classList.add("border-blue-500");
 
-            let isDragging = false;
-            let isResizing = false;
-            let currentResizer = null;
-            let offsetX, offsetY;
-            let startX, startY, startWidth, startHeight;
+document.getElementById("settingsTitleInput").value = document.title;
+document.getElementById("settingsFaviconInput").value =
+  document.getElementById("favicon").href;
 
-            const onMouseDown = (e) => {
-                bringToFront(windowEl);
-                if (e.target.classList.contains('window-drag-handle')) {
-                    isDragging = true;
-                    offsetX = e.clientX - windowEl.offsetLeft;
-                    offsetY = e.clientY - windowEl.offsetTop;
-                } else if (e.target.classList.contains('window-resizer')) {
-                    isResizing = true;
-                    currentResizer = e.target;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    startWidth = parseInt(document.defaultView.getComputedStyle(windowEl).width, 10);
-                    startHeight = parseInt(document.defaultView.getComputedStyle(windowEl).height, 10);
-                }
-            };
+/* === enforce safe CSS state for instant movement === */
+try {
+  const cs = getComputedStyle(windowEl);
+  if (cs.position === "static") windowEl.style.position = "absolute";
+  windowEl.style.transition = "none";
+  windowEl.style.willChange = "left, top, width, height";
+  windowEl.style.touchAction = "none";
+} catch (err) {}
 
-            const onMouseMove = (e) => {
-                if (isDragging) {
-                    let x = e.clientX - offsetX;
-                    let y = e.clientY - offsetY;
-                    windowEl.style.left = `${x}px`;
-                    windowEl.style.top = `${y}px`;
-                } else if (isResizing) {
-                    if (currentResizer.classList.contains('bottom-right')) {
-                        windowEl.style.width = `${startWidth + e.clientX - startX}px`;
-                        windowEl.style.height = `${startHeight + e.clientY - startY}px`;
-                    }
+/* === make buttons bigger programmatically === */
+[".close-btn", ".minimize-btn", ".maximize-btn"].forEach((sel) => {
+  const btn = windowEl.querySelector(sel);
+  if (btn) {
+    btn.style.width = "36px";
+    btn.style.height = "36px";
+    btn.style.fontSize = "20px";
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "center";
+    btn.style.cursor = "pointer";
+    btn.style.userSelect = "none";
+    btn.style.touchAction = "manipulation"; // prevents zoom/double tap
+  }
+});
 
-                }
-            };
+/* === enlarge drag handle for fingertip === */
+const dragHandle = windowEl.querySelector(".window-drag-handle");
+if (dragHandle) {
+  dragHandle.style.padding = "12px"; // bigger touch area
+  dragHandle.style.cursor = "grab";
+  dragHandle.style.userSelect = "none";
+  dragHandle.style.touchAction = "none";
+}
 
-            const onMouseUp = () => {
-                isDragging = false;
-                isResizing = false;
-            };
+/* === pointer-based drag + resize (mouse + touch) === */
+let draggingPointerId = null;
+let dragStartX = 0,
+  dragStartY = 0,
+  dragStartLeft = 0,
+  dragStartTop = 0;
+let resizingPointerId = null;
+let resizeStartX = 0,
+  resizeStartY = 0,
+  resizeStartWidth = 0,
+  resizeStartHeight = 0;
 
-            windowEl.addEventListener('mousedown', onMouseDown);
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+function onPointerDown(e) {
+  bringToFront(windowEl);
 
-            windowEl.querySelector('.close-btn').addEventListener('click', () => {
-                closeApp('settings');
-            });
+  if (e.target.classList.contains("window-drag-handle")) {
+    windowEl.setPointerCapture(e.pointerId);
+    draggingPointerId = e.pointerId;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const rect = windowEl.getBoundingClientRect();
+    dragStartLeft = rect.left + window.scrollX;
+    dragStartTop = rect.top + window.scrollY;
+    document.body.style.userSelect = "none";
+    windowEl.style.cursor = "grabbing";
+  } else if (e.target.classList.contains("window-resizer")) {
+    windowEl.setPointerCapture(e.pointerId);
+    resizingPointerId = e.pointerId;
+    resizeStartX = e.clientX;
+    resizeStartY = e.clientY;
+    const cs = getComputedStyle(windowEl);
+    resizeStartWidth = parseInt(cs.width, 10);
+    resizeStartHeight = parseInt(cs.height, 10);
+    document.body.style.userSelect = "none";
+    windowEl.style.cursor = "nwse-resize";
+  }
+}
 
-            windowEl.querySelector('.minimize-btn').addEventListener('click', () => {
-                windowEl.classList.add('hidden');
-            });
+function onPointerMove(e) {
+  if (draggingPointerId !== null && e.pointerId === draggingPointerId) {
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    windowEl.style.left = dragStartLeft + dx + "px";
+    windowEl.style.top = dragStartTop + dy + "px";
+    return;
+  }
 
-            windowEl.querySelector('.maximize-btn').addEventListener('click', () => {
-                if (windowEl.style.top === '0px' && windowEl.style.left === '0px' && windowEl.style.width === '100vw' && windowEl.style.height === '100vh') {
-                    windowEl.style.top = `${Math.random() * (window.innerHeight - 600) + 50}px`;
-                    windowEl.style.left = `${Math.random() * (window.innerWidth - 800) + 50}px`;
-                    windowEl.style.width = '600px';
-                    windowEl.style.height = '600px';
-                } else {
-                    windowEl.style.top = '0px';
-                    windowEl.style.left = '0px';
-                    windowEl.style.width = '100vw';
-                    windowEl.style.height = '100vh';
-                }
-            });
+  if (resizingPointerId !== null && e.pointerId === resizingPointerId) {
+    const newW = Math.max(
+      120,
+      resizeStartWidth + (e.clientX - resizeStartX)
+    );
+    const newH = Math.max(
+      80,
+      resizeStartHeight + (e.clientY - resizeStartY)
+    );
+    windowEl.style.width = newW + "px";
+    windowEl.style.height = newH + "px";
+    return;
+  }
+}
+
+function onPointerUpOrCancel(e) {
+  if (draggingPointerId !== null && e.pointerId === draggingPointerId) {
+    try {
+      windowEl.releasePointerCapture(e.pointerId);
+    } catch (err) {}
+    draggingPointerId = null;
+    windowEl.style.cursor = "";
+    document.body.style.userSelect = "";
+  }
+  if (resizingPointerId !== null && e.pointerId === resizingPointerId) {
+    try {
+      windowEl.releasePointerCapture(e.pointerId);
+    } catch (err) {}
+    resizingPointerId = null;
+    windowEl.style.cursor = "";
+    document.body.style.userSelect = "";
+  }
+}
+
+/* attach listeners */
+windowEl.addEventListener("pointerdown", onPointerDown);
+document.addEventListener("pointermove", onPointerMove);
+document.addEventListener("pointerup", onPointerUpOrCancel);
+document.addEventListener("pointercancel", onPointerUpOrCancel);
+
+/* === buttons === */
+const closeBtn = windowEl.querySelector(".close-btn");
+if (closeBtn) closeBtn.addEventListener("click", () => closeApp("settings"));
+
+const minBtn = windowEl.querySelector(".minimize-btn");
+if (minBtn) minBtn.addEventListener("click", () => windowEl.classList.add("hidden"));
+
+const maxBtn = windowEl.querySelector(".maximize-btn");
+if (maxBtn) {
+  maxBtn.addEventListener("click", () => {
+    // Add smooth transition
+    windowEl.style.transition = "top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease";
+
+    if (
+      windowEl.style.top === "0px" &&
+      windowEl.style.left === "0px" &&
+      windowEl.style.width === "100vw" &&
+      windowEl.style.height === "100vh"
+    ) {
+      // Restore
+      windowEl.style.top = `${
+        Math.random() * (window.innerHeight - 600) + 50
+      }px`;
+      windowEl.style.left = `${
+        Math.random() * (window.innerWidth - 800) + 50
+      }px`;
+      windowEl.style.width = "600px";
+      windowEl.style.height = "600px";
+    } else {
+      // Maximize
+      windowEl.style.top = "0px";
+      windowEl.style.left = "0px";
+      windowEl.style.width = "100vw";
+      windowEl.style.height = "100vh";
+    }
+
+    // Remove transition after it finishes so dragging feels instant
+    setTimeout(() => {
+      windowEl.style.transition = "none";
+    }, 300);
+  });
+}
+
+// =================================================================
+
 
             document.getElementById('settingsProfilePicInput').addEventListener('change', (event) => {
                 const file = event.target.files[0];
@@ -812,19 +967,23 @@
             });
 
             document.getElementById('settings-dark-theme-box').addEventListener('click', () => {
-                setupData.theme = 'dark';
-                localStorage.setItem('userData', JSON.stringify(setupData));
-                loadDesktop();
-                document.getElementById('settingsDarkThemeBox').classList.add('border-blue-500');
-                document.getElementById('settingsLightThemeBox').classList.remove('border-blue-500');
-            });
-            document.getElementById('settings-light-theme-box').addEventListener('click', () => {
-                setupData.theme = 'light';
-                localStorage.setItem('userData', JSON.stringify(setupData));
-                loadDesktop();
-                document.getElementById('settingsLightThemeBox').classList.add('border-blue-500');
-                document.getElementById('settingsDarkThemeBox').classList.remove('border-blue-500');
-            });
+    setupData.theme = 'dark';
+    localStorage.setItem('userData', JSON.stringify(setupData));
+    loadDesktop();
+
+    document.getElementById('settings-dark-theme-box').classList.add('border-blue-500');
+    document.getElementById('settings-light-theme-box').classList.remove('border-blue-500');
+});
+
+document.getElementById('settings-light-theme-box').addEventListener('click', () => {
+    setupData.theme = 'light';
+    localStorage.setItem('userData', JSON.stringify(setupData));
+    loadDesktop();
+
+    document.getElementById('settings-light-theme-box').classList.add('border-blue-500');
+    document.getElementById('settings-dark-theme-box').classList.remove('border-blue-500');
+});
+
 
             document.getElementById('saveFaviconTitleBtn').addEventListener('click', () => {
                 const newTitle = document.getElementById('settingsTitleInput').value;
@@ -964,14 +1123,28 @@
         };
 
         const uninstallApp = (appId) => {
-            const appIndex = installedApps.findIndex(app => app.id === appId);
-            if (appIndex > -1) {
-                installedApps.splice(appIndex, 1);
-                localStorage.setItem('installedApps', JSON.stringify(installedApps));
-                renderApps();
-            }
-            hideContextMenu();
-        };
+    // 1. remove from installed apps
+    const appIndex = installedApps.findIndex(app => app.id === appId);
+    if (appIndex > -1) {
+        installedApps.splice(appIndex, 1);
+        localStorage.setItem('installedApps', JSON.stringify(installedApps));
+        renderApps();
+    }
+
+    // 2. also remove from pinned apps if present
+    const pinIndex = pinnedApps.findIndex(app => app.id === appId);
+    if (pinIndex > -1) {
+        pinnedApps.splice(pinIndex, 1);
+        localStorage.setItem('pinnedApps', JSON.stringify(pinnedApps));
+        renderPinnedApps();
+    }
+
+    // 3. close any open window/taskbar item
+    closeApp(appId);
+
+    hideContextMenu();
+};
+
 
         const hideContextMenu = () => {
             contextMenuEl.classList.add('hidden');
@@ -1076,10 +1249,16 @@
                 const appDiv = document.createElement('div');
                 appDiv.className = 'flex flex-col items-center justify-center p-4 rounded-xl shadow-md bg-gray-100 dark:bg-gray-700 hover:scale-105 transition-transform duration-200 cursor-pointer';
                 appDiv.innerHTML = `
-                    <img src="${app.icon}" class="w-12 h-12 mb-2" alt="${app.name} Icon">
+                    <img src="${app.icon}" class="w-12 h-12 mb-2 rounded-[15px]" alt="${app.name} Icon">
                     <span class="text-lg font-semibold text-center">${app.name}</span>
                     <span class="text-sm text-gray-500 dark:text-gray-400 mt-1">${app.type === 'game' ? 'Game' : 'App'}</span>
-                    <button class="mt-2 px-4 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors duration-200">Install</button>
+                    <button 
+                    class="mt-2 px-4 py-1 text-white rounded-lg text-sm transition-colors duration-200"
+                    style="background-color: #1f2937;"
+                    onmouseover="this.style.backgroundColor='#171f2bff'"
+                    onmouseout="this.style.backgroundColor='#1f2937'">
+                    Install
+                    </button>
                 `;
                 appDiv.addEventListener('click', () => installApp(app.id));
                 storeAppsContainer.appendChild(appDiv);
