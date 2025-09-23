@@ -1,10 +1,10 @@
-    window.onload = function() {
+window.onload = function() {
 
         const settingsApp = { "id": "settings", "name": "Settings", "icon": "/files/images/logo.png", "type": "app", "src": "" };
 
         const allApps = {
             "apps": [
-                
+
             ],
             "games": [
   { "id": "1", "name": "1", "icon": "/files/gms/1/meta/apple-touch-icon.png", "type": "game", "src": "/files/gms/1/" },
@@ -336,7 +336,6 @@
             }
         });
 
-        // ================= DESKTOP ICONS =================
 const renderApps = () => {
     appContainerEl.innerHTML = '';
 
@@ -354,7 +353,6 @@ const renderApps = () => {
     });
 };
 
-// ================= TASKBAR =================
 const renderPinnedApps = () => {
     pinnedAppsTaskbarEl.innerHTML = '';
     pinnedApps.forEach(app => {
@@ -372,9 +370,8 @@ const bringToFront = (windowEl) => {
     windowEl.classList.add('active-window');
 };
 
-// ================= TASKBAR ITEM =================
 const createTaskbarItem = (app) => {
-    // prevent duplicates
+
     if (document.getElementById(`taskbar-item-${app.id}`)) {
         return document.getElementById(`taskbar-item-${app.id}`);
     }
@@ -404,7 +401,6 @@ const createTaskbarItem = (app) => {
     return taskbarItem;
 };
 
-// ================= WINDOW LOGIC =================
 const closeWindow = (appId) => {
     const win = activeWindows[appId];
     if (win) win.classList.add('hidden');
@@ -432,7 +428,6 @@ const closeApp = (appId) => {
     hideContextMenu();
 };
 
-// ================= PIN / UNPIN =================
 const pinApp = (appId) => {
     const app = [...allApps.apps, ...allApps.games, settingsApp].find(a => a.id === appId);
     if (app && !pinnedApps.some(a => a.id === appId)) {
@@ -451,7 +446,6 @@ const unpinApp = (appId) => {
         renderPinnedApps();
     }
 
-    // ✅ also remove taskbar button if the app is NOT open
     if (!activeWindows[appId]) {
         const taskbarItem = document.getElementById(`taskbar-item-${appId}`);
         if (taskbarItem) taskbarItem.remove();
@@ -459,9 +453,6 @@ const unpinApp = (appId) => {
 
     hideContextMenu();
 };
-
-
-
 
         const createDraggableWindow = (app) => {
     const windowId = `window-${app.id}`;
@@ -476,7 +467,6 @@ const unpinApp = (appId) => {
     windowEl.style.width = '700px';
     windowEl.style.height = '500px';
 
-    // Start centered
     let currentX = (window.innerWidth - 700) / 2;
     let currentY = (window.innerHeight - 500) / 2;
     windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
@@ -505,7 +495,6 @@ const unpinApp = (appId) => {
     `;
     windowContainerEl.appendChild(windowEl);
 
-    // --- OPENING FADE-IN ---
     windowEl.style.opacity = "0";
     windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
     windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
@@ -515,7 +504,6 @@ const unpinApp = (appId) => {
         windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(1)`;
     });
 
-    // --- DRAGGING (mouse + touch, no glide) ---
     let isDragging = false;
     let dragOffsetX = 0, dragOffsetY = 0;
 
@@ -539,12 +527,10 @@ const unpinApp = (appId) => {
 
     const endDrag = () => { isDragging = false; };
 
-    // Mouse
     dragHandle.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
     document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
     document.addEventListener('mouseup', endDrag);
 
-    // Touch
     dragHandle.addEventListener('touchstart', (e) => {
         const t = e.touches[0];
         startDrag(t.clientX, t.clientY);
@@ -560,30 +546,26 @@ const unpinApp = (appId) => {
 
     document.addEventListener('touchend', endDrag);
 
-    // --- CONTROLS ---
-    // Close (fade-out + unpin properly)
     windowEl.querySelector('.close-btn').addEventListener('click', () => {
         windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
         windowEl.style.opacity = "0";
         windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
 
         setTimeout(() => {
-            closeApp(app.id); // unpins + removes
+            closeApp(app.id); 
             if (activeWindows[app.id]) delete activeWindows[app.id];
             windowEl.remove();
         }, 250);
     });
 
-    // Minimize
     windowEl.querySelector('.minimize-btn').addEventListener('click', () => {
         windowEl.classList.add('hidden');
     });
 
-    // Maximize / Restore
     const maximizeBtn = windowEl.querySelector('.maximize-btn');
     const toggleMaximize = () => {
         if (windowEl.classList.contains('maximized')) {
-            // Restore
+
             windowEl.classList.remove('maximized');
             windowEl.style.transition = "all 0.25s ease";
             windowEl.style.width = '700px';
@@ -592,7 +574,7 @@ const unpinApp = (appId) => {
             currentY = (window.innerHeight - 500) / 2;
             windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
         } else {
-            // Maximize
+
             windowEl.classList.add('maximized');
             windowEl.style.transition = "all 0.25s ease";
             windowEl.style.width = '100vw';
@@ -605,11 +587,8 @@ const unpinApp = (appId) => {
     maximizeBtn.addEventListener('click', toggleMaximize);
     dragHandle.addEventListener('dblclick', toggleMaximize);
 
-    // Register window
     activeWindows[app.id] = windowEl;
 };
-
-
 
         const createSettingsWindow = () => {
             const windowId = 'window-settings';
@@ -742,7 +721,6 @@ const unpinApp = (appId) => {
             windowContainerEl.appendChild(windowEl);
             windowEl.classList.add('fade-in');
 
-            // ================= SETTINGS WINDOW WITH BIG BUTTONS + TOUCH DRAG =================
 activeWindows.settings = windowEl;
 
 document.getElementById(
@@ -758,7 +736,6 @@ document.getElementById("settingsTitleInput").value = document.title;
 document.getElementById("settingsFaviconInput").value =
   document.getElementById("favicon").href;
 
-/* === enforce safe CSS state for instant movement === */
 try {
   const cs = getComputedStyle(windowEl);
   if (cs.position === "static") windowEl.style.position = "absolute";
@@ -767,7 +744,6 @@ try {
   windowEl.style.touchAction = "none";
 } catch (err) {}
 
-/* === make buttons bigger programmatically === */
 [".close-btn", ".minimize-btn", ".maximize-btn"].forEach((sel) => {
   const btn = windowEl.querySelector(sel);
   if (btn) {
@@ -779,20 +755,18 @@ try {
     btn.style.justifyContent = "center";
     btn.style.cursor = "pointer";
     btn.style.userSelect = "none";
-    btn.style.touchAction = "manipulation"; // prevents zoom/double tap
+    btn.style.touchAction = "manipulation"; 
   }
 });
 
-/* === enlarge drag handle for fingertip === */
 const dragHandle = windowEl.querySelector(".window-drag-handle");
 if (dragHandle) {
-  dragHandle.style.padding = "12px"; // bigger touch area
+  dragHandle.style.padding = "12px"; 
   dragHandle.style.cursor = "grab";
   dragHandle.style.userSelect = "none";
   dragHandle.style.touchAction = "none";
 }
 
-/* === pointer-based drag + resize (mouse + touch) === */
 let draggingPointerId = null;
 let dragStartX = 0,
   dragStartY = 0,
@@ -873,13 +847,11 @@ function onPointerUpOrCancel(e) {
   }
 }
 
-/* attach listeners */
 windowEl.addEventListener("pointerdown", onPointerDown);
 document.addEventListener("pointermove", onPointerMove);
 document.addEventListener("pointerup", onPointerUpOrCancel);
 document.addEventListener("pointercancel", onPointerUpOrCancel);
 
-/* === buttons === */
 const closeBtn = windowEl.querySelector(".close-btn");
 if (closeBtn) closeBtn.addEventListener("click", () => closeApp("settings"));
 
@@ -889,7 +861,7 @@ if (minBtn) minBtn.addEventListener("click", () => windowEl.classList.add("hidde
 const maxBtn = windowEl.querySelector(".maximize-btn");
 if (maxBtn) {
   maxBtn.addEventListener("click", () => {
-    // Add smooth transition
+
     windowEl.style.transition = "top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease";
 
     if (
@@ -898,7 +870,7 @@ if (maxBtn) {
       windowEl.style.width === "100vw" &&
       windowEl.style.height === "100vh"
     ) {
-      // Restore
+
       windowEl.style.top = `${
         Math.random() * (window.innerHeight - 600) + 50
       }px`;
@@ -908,22 +880,18 @@ if (maxBtn) {
       windowEl.style.width = "600px";
       windowEl.style.height = "600px";
     } else {
-      // Maximize
+
       windowEl.style.top = "0px";
       windowEl.style.left = "0px";
       windowEl.style.width = "100vw";
       windowEl.style.height = "100vh";
     }
 
-    // Remove transition after it finishes so dragging feels instant
     setTimeout(() => {
       windowEl.style.transition = "none";
     }, 300);
   });
 }
-
-// =================================================================
-
 
             document.getElementById('settingsProfilePicInput').addEventListener('change', (event) => {
                 const file = event.target.files[0];
@@ -983,7 +951,6 @@ document.getElementById('settings-light-theme-box').addEventListener('click', ()
     document.getElementById('settings-light-theme-box').classList.add('border-blue-500');
     document.getElementById('settings-dark-theme-box').classList.remove('border-blue-500');
 });
-
 
             document.getElementById('saveFaviconTitleBtn').addEventListener('click', () => {
                 const newTitle = document.getElementById('settingsTitleInput').value;
@@ -1123,7 +1090,7 @@ document.getElementById('settings-light-theme-box').addEventListener('click', ()
         };
 
         const uninstallApp = (appId) => {
-    // 1. remove from installed apps
+
     const appIndex = installedApps.findIndex(app => app.id === appId);
     if (appIndex > -1) {
         installedApps.splice(appIndex, 1);
@@ -1131,7 +1098,6 @@ document.getElementById('settings-light-theme-box').addEventListener('click', ()
         renderApps();
     }
 
-    // 2. also remove from pinned apps if present
     const pinIndex = pinnedApps.findIndex(app => app.id === appId);
     if (pinIndex > -1) {
         pinnedApps.splice(pinIndex, 1);
@@ -1139,12 +1105,10 @@ document.getElementById('settings-light-theme-box').addEventListener('click', ()
         renderPinnedApps();
     }
 
-    // 3. close any open window/taskbar item
     closeApp(appId);
 
     hideContextMenu();
 };
-
 
         const hideContextMenu = () => {
             contextMenuEl.classList.add('hidden');
