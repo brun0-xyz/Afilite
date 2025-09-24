@@ -546,7 +546,6 @@ const unpinApp = (appId) => {
 
     document.addEventListener('touchend', endDrag);
 
-    // Helper function to add both mouse and touch events
     const addButtonEvents = (element, handler) => {
         element.addEventListener('click', handler);
         element.addEventListener('touchend', (e) => {
@@ -555,7 +554,6 @@ const unpinApp = (appId) => {
         });
     };
 
-    // Close button with both mouse and touch support
     const closeBtn = windowEl.querySelector('.close-btn');
     addButtonEvents(closeBtn, () => {
         windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
@@ -569,13 +567,11 @@ const unpinApp = (appId) => {
         }, 250);
     });
 
-    // Minimize button with both mouse and touch support
     const minimizeBtn = windowEl.querySelector('.minimize-btn');
     addButtonEvents(minimizeBtn, () => {
         windowEl.classList.add('hidden');
     });
 
-    // Maximize button with both mouse and touch support
     const maximizeBtn = windowEl.querySelector('.maximize-btn');
     const toggleMaximize = () => {
         if (windowEl.classList.contains('maximized')) {
@@ -599,7 +595,6 @@ const unpinApp = (appId) => {
     
     addButtonEvents(maximizeBtn, toggleMaximize);
     
-    // Double tap for maximize on mobile (alternative to double click)
     let tapCount = 0;
     let tapTimer;
     dragHandle.addEventListener('touchend', (e) => {
