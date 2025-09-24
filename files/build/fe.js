@@ -518,174 +518,108 @@ const unpinApp = (appId) => {
     };
 
     const moveDrag = (clientX, clientY) => {
-  if (!isDragging) return;
+        if (!isDragging) return;
+        currentX = clientX - dragOffsetX;
+        currentY = clientY - dragOffsetY;
+        windowEl.style.transition = "none";
+        windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    };
 
-  const maxX = window.innerWidth - windowEl.offsetWidth;
-  const maxY = window.innerHeight - windowEl.offsetHeight;
+    const endDrag = () => { isDragging = false; };
 
-  currentX = Math.max(0, Math.min(clientX - dragOffsetX, maxX));
-  currentY = Math.max(0, Math.min(clientY - dragOffsetY, maxY));
+    dragHandle.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
 
-  windowEl.style.transition = "none";
-  windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    dragHandle.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        startDrag(t.clientX, t.clientY);
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const t = e.touches[0];
+        moveDrag(t.clientX, t.clientY);
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', endDrag);
+
+    // Helper function to add both mouse and touch events
+    const addButtonEvents = (element, handler) => {
+        element.addEventListener('click', handler);
+        element.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            handler();
+        });
+    };
+
+    // Close button with both mouse and touch support
+    const closeBtn = windowEl.querySelector('.close-btn');
+    addButtonEvents(closeBtn, () => {
+        windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+        windowEl.style.opacity = "0";
+        windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
+
+        setTimeout(() => {
+            closeApp(app.id); 
+            if (activeWindows[app.id]) delete activeWindows[app.id];
+            windowEl.remove();
+        }, 250);
+    });
+
+    // Minimize button with both mouse and touch support
+    const minimizeBtn = windowEl.querySelector('.minimize-btn');
+    addButtonEvents(minimizeBtn, () => {
+        windowEl.classList.add('hidden');
+    });
+
+    // Maximize button with both mouse and touch support
+    const maximizeBtn = windowEl.querySelector('.maximize-btn');
+    const toggleMaximize = () => {
+        if (windowEl.classList.contains('maximized')) {
+            windowEl.classList.remove('maximized');
+            windowEl.style.transition = "all 0.25s ease";
+            windowEl.style.width = '700px';
+            windowEl.style.height = '500px';
+            currentX = (window.innerWidth - 700) / 2;
+            currentY = (window.innerHeight - 500) / 2;
+            windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+        } else {
+            windowEl.classList.add('maximized');
+            windowEl.style.transition = "all 0.25s ease";
+            windowEl.style.width = '100vw';
+            windowEl.style.height = '100vh';
+            currentX = 0;
+            currentY = 0;
+            windowEl.style.transform = `translate(0px, 0px)`;
+        }
+    };
+    
+    addButtonEvents(maximizeBtn, toggleMaximize);
+    
+    // Double tap for maximize on mobile (alternative to double click)
+    let tapCount = 0;
+    let tapTimer;
+    dragHandle.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        tapCount++;
+        if (tapCount === 1) {
+            tapTimer = setTimeout(() => {
+                tapCount = 0;
+            }, 300);
+        } else if (tapCount === 2) {
+            clearTimeout(tapTimer);
+            tapCount = 0;
+            toggleMaximize();
+        }
+    });
+
+    dragHandle.addEventListener('dblclick', toggleMaximize);
+
+    activeWindows[app.id] = windowEl;
 };
-
-const endDrag = () => {
-  isDragging = false;
-
-  windowEl.style.transition = "transform 0.2s ease";
-};
-
-dragHandle.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
-document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
-document.addEventListener('mouseup', endDrag);
-
-dragHandle.addEventListener('touchstart', (e) => {
-  if (e.touches.length > 1) return; 
-
-  const t = e.touches[0];
-  startDrag(t.clientX, t.clientY);
-
-  e.preventDefault();
-  e.stopPropagation();
-}, { passive: false, capture: true });
-
-document.addEventListener('touchmove', (e) => {
-  if (!isDragging || e.touches.length > 1) return;
-
-  const t = e.touches[0];
-  moveDrag(t.clientX, t.clientY);
-
-  e.preventDefault();
-  e.stopPropagation();
-}, { passive: false, capture: true });
-
-document.addEventListener('touchend', endDrag);
-document.addEventListener('touchcancel', endDrag); 
-
-const closeBtn = windowEl.querySelector('.close-btn');
-closeBtn.style.minWidth = '44px'; 
-closeBtn.style.minHeight = '44px';
-
-closeBtn.addEventListener('click', () => {
-  windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
-  windowEl.style.opacity = "0";
-  windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
-  setTimeout(() => {
-    closeApp(app.id);
-    if (activeWindows[app.id]) delete activeWindows[app.id];
-    windowEl.remove();
-  }, 250);
-});
-
-const minimizeBtn = windowEl.querySelector('.minimize-btn');
-minimizeBtn.style.minWidth = '44px';
-minimizeBtn.style.minHeight = '44px';
-
-minimizeBtn.addEventListener('click', () => {
-  windowEl.classList.add('hidden');
-});
-
-const maximizeBtn = windowEl.querySelector('.maximize-btn');
-maximizeBtn.style.minWidth = '44px';
-maximizeBtn.style.minHeight = '44px';
-
-const toggleMaximize = () => {
-
-  if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-
-      if (windowEl.requestFullscreen) {
-        windowEl.requestFullscreen();
-      } else if (windowEl.webkitRequestFullscreen) {
-        windowEl.webkitRequestFullscreen();
-      } else if (windowEl.mozRequestFullScreen) {
-        windowEl.mozRequestFullScreen();
-      }
-
-      windowEl.classList.add('maximized');
-      windowEl.style.width = '100vw';
-      windowEl.style.height = '100vh';
-      windowEl.style.transform = 'translate(0px, 0px)';
-    } else {
-
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      }
-
-      windowEl.classList.remove('maximized');
-      windowEl.style.width = '700px';
-      windowEl.style.height = '500px';
-      windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
-    }
-  } else {
-
-    if (windowEl.classList.contains('maximized')) {
-      windowEl.classList.remove('maximized');
-      windowEl.style.transition = "all 0.25s ease";
-      windowEl.style.width = '700px';
-      windowEl.style.height = '500px';
-      currentX = (window.innerWidth - 700) / 2;
-      currentY = (window.innerHeight - 500) / 2;
-      windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
-    } else {
-      windowEl.classList.add('maximized');
-      windowEl.style.transition = "all 0.25s ease";
-      windowEl.style.width = '100vw';
-      windowEl.style.height = '100vh';
-      currentX = 0;
-      currentY = 0;
-      windowEl.style.transform = 'translate(0px, 0px)';
-    }
-  }
-};
-
-maximizeBtn.addEventListener('click', toggleMaximize);
-
-let lastTap = 0;
-dragHandle.addEventListener('touchend', (e) => {
-  const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTap;
-
-  if (tapLength < 300 && tapLength > 0) {
-
-    toggleMaximize();
-    e.preventDefault();
-  }
-  lastTap = currentTime;
-});
-
-window.addEventListener('orientationchange', () => {
-
-  setTimeout(() => {
-    if (windowEl.classList.contains('maximized')) {
-      windowEl.style.width = '100vw';
-      windowEl.style.height = '100vh';
-      windowEl.style.transform = 'translate(0px, 0px)';
-    }
-  }, 100);
-});
-
-document.addEventListener('fullscreenchange', handleFullscreenChange);
-document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-
-function handleFullscreenChange() {
-  if (!document.fullscreenElement && !document.webkitFullscreenElement && 
-      !document.mozFullScreenElement) {
-    windowEl.classList.remove('maximized');
-    windowEl.style.width = '700px';
-    windowEl.style.height = '500px';
-    windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
-  }
-}
-
-activeWindows[app.id] = windowEl;
-        };
 
         const createSettingsWindow = () => {
             const windowId = 'window-settings';
