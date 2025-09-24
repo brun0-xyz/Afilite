@@ -483,10 +483,33 @@ const unpinApp = (appId) => {
                 <span class="font-semibold text-sm truncate">${app.name}</span>
             </div>
             <div class="flex space-x-2">
-                <button class="minimize-btn w-9 h-9 bg-yellow-400 rounded-full hover:scale-110 transition-transform"></button>
-                <button class="maximize-btn w-9 h-9 bg-green-500 rounded-full hover:scale-110 transition-transform"></button>
-                <button class="close-btn w-9 h-9 bg-red-500 rounded-full hover:scale-110 transition-transform"></button>
-            </div>
+  <button class="minimize-btn w-12 h-12 bg-yellow-400 rounded-full active:scale-95 transition-transform"></button>
+  <button class="maximize-btn w-12 h-12 bg-green-500 rounded-full active:scale-95 transition-transform"></button>
+  <button class="close-btn w-12 h-12 bg-red-500 rounded-full active:scale-95 transition-transform"></button>
+</div>
+
+<script>
+  const addTouchSupport = (selector, handler) => {
+    document.querySelector(selector).addEventListener("click", handler);
+    document.querySelector(selector).addEventListener("touchstart", (e) => {
+      e.preventDefault(); // prevents ghost clicks
+      handler(e);
+    }, { passive: false });
+  };
+
+  addTouchSupport(".minimize-btn", () => {
+    console.log("Minimize tapped");
+  });
+
+  addTouchSupport(".maximize-btn", () => {
+    console.log("Maximize tapped");
+  });
+
+  addTouchSupport(".close-btn", () => {
+    console.log("Close tapped");
+  });
+</script>
+
         </div>
         <div class="flex-grow p-2 overflow-auto bg-white dark:bg-gray-700">
             ${contentHTML}
