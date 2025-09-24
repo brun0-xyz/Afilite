@@ -9,10 +9,17 @@ window.onload = function() {
     };
 
     const allApps = {
-        "apps": [
+        "apps": [{
+                "id": "Partners",
+                "name": "Partners",
+                "icon": "/files/images/apps/partners.jpg",
+                "type": "app",
+                "src": "/files/pages/partners.html"
+            }
 
         ],
-        "games": [{
+        "games": [
+            {
                 "id": "1",
                 "name": "1",
                 "icon": "/files/gms/1/meta/apple-touch-icon.png",
