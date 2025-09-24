@@ -2171,7 +2171,7 @@ window.onload = function() {
                     <p class="text-gray-600 dark:text-gray-400">Theme: <span class="capitalize">${profile.theme}</span></p>
                     <p class="text-gray-600 dark:text-gray-400">Installed Apps: ${installedApps.length}</p>
                     <p class="text-gray-600 dark:text-gray-400" >Created by Brunys :)</p>
-                    <p class="text-gray-600 dark:text-gray-400" >Hosted by Exodus <a href="https://mexi.rest">@ neo</a></p>
+                    <p class="text-gray-600 dark:text-gray-400" >Hosted by Exodus <a href="https://mexi.rest">@ neo</a> Ports by Bog<a href="https://truffled.lol">@ Truffled</a></p>
             `;
         document.body.appendChild(modal);
         document.getElementById('closeProfileModal').addEventListener('click', () => modal.remove());
