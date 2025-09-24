@@ -21,7 +21,7 @@ window.onload = function() {
         "games": [{
                 "id": "hollowknight",
                 "name": "Hollow Knight",
-                "icon": "/files/gms/hollowknight/512.png",
+                "icon": "/files/gms/hollowknight/new.png",
                 "type": "game",
                 "src": "/files/gms/hollowknight/"
             },
