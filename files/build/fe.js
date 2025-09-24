@@ -18,7 +18,13 @@ window.onload = function() {
             }
 
         ],
-        "games": [
+        "games": [{
+                "id": "hollowknight",
+                "name": "Hollow Knight",
+                "icon": "/files/gms/hollowknight/512.png",
+                "type": "game",
+                "src": "/files/gms/hollowknight/"
+            },
             {
                 "id": "1",
                 "name": "1",
