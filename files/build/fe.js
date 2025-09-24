@@ -483,33 +483,10 @@ const unpinApp = (appId) => {
                 <span class="font-semibold text-sm truncate">${app.name}</span>
             </div>
             <div class="flex space-x-2">
-  <button class="minimize-btn w-12 h-12 bg-yellow-400 rounded-full active:scale-95 transition-transform"></button>
-  <button class="maximize-btn w-12 h-12 bg-green-500 rounded-full active:scale-95 transition-transform"></button>
-  <button class="close-btn w-12 h-12 bg-red-500 rounded-full active:scale-95 transition-transform"></button>
-</div>
-
-<script>
-  const addTouchSupport = (selector, handler) => {
-    document.querySelector(selector).addEventListener("click", handler);
-    document.querySelector(selector).addEventListener("touchstart", (e) => {
-      e.preventDefault(); // prevents ghost clicks
-      handler(e);
-    }, { passive: false });
-  };
-
-  addTouchSupport(".minimize-btn", () => {
-    console.log("Minimize tapped");
-  });
-
-  addTouchSupport(".maximize-btn", () => {
-    console.log("Maximize tapped");
-  });
-
-  addTouchSupport(".close-btn", () => {
-    console.log("Close tapped");
-  });
-</script>
-
+                <button class="minimize-btn w-9 h-9 bg-yellow-400 rounded-full hover:scale-110 transition-transform"></button>
+                <button class="maximize-btn w-9 h-9 bg-green-500 rounded-full hover:scale-110 transition-transform"></button>
+                <button class="close-btn w-9 h-9 bg-red-500 rounded-full hover:scale-110 transition-transform"></button>
+            </div>
         </div>
         <div class="flex-grow p-2 overflow-auto bg-white dark:bg-gray-700">
             ${contentHTML}
@@ -541,77 +518,174 @@ const unpinApp = (appId) => {
     };
 
     const moveDrag = (clientX, clientY) => {
-        if (!isDragging) return;
-        currentX = clientX - dragOffsetX;
-        currentY = clientY - dragOffsetY;
-        windowEl.style.transition = "none";
-        windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
-    };
+  if (!isDragging) return;
 
-    const endDrag = () => { isDragging = false; };
+  const maxX = window.innerWidth - windowEl.offsetWidth;
+  const maxY = window.innerHeight - windowEl.offsetHeight;
 
-    dragHandle.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
-    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
-    document.addEventListener('mouseup', endDrag);
+  currentX = Math.max(0, Math.min(clientX - dragOffsetX, maxX));
+  currentY = Math.max(0, Math.min(clientY - dragOffsetY, maxY));
 
-    dragHandle.addEventListener('touchstart', (e) => {
-        const t = e.touches[0];
-        startDrag(t.clientX, t.clientY);
-        e.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
-        const t = e.touches[0];
-        moveDrag(t.clientX, t.clientY);
-        e.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener('touchend', endDrag);
-
-    windowEl.querySelector('.close-btn').addEventListener('click', () => {
-        windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
-        windowEl.style.opacity = "0";
-        windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
-
-        setTimeout(() => {
-            closeApp(app.id); 
-            if (activeWindows[app.id]) delete activeWindows[app.id];
-            windowEl.remove();
-        }, 250);
-    });
-
-    windowEl.querySelector('.minimize-btn').addEventListener('click', () => {
-        windowEl.classList.add('hidden');
-    });
-
-    const maximizeBtn = windowEl.querySelector('.maximize-btn');
-    const toggleMaximize = () => {
-        if (windowEl.classList.contains('maximized')) {
-
-            windowEl.classList.remove('maximized');
-            windowEl.style.transition = "all 0.25s ease";
-            windowEl.style.width = '700px';
-            windowEl.style.height = '500px';
-            currentX = (window.innerWidth - 700) / 2;
-            currentY = (window.innerHeight - 500) / 2;
-            windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
-        } else {
-
-            windowEl.classList.add('maximized');
-            windowEl.style.transition = "all 0.25s ease";
-            windowEl.style.width = '100vw';
-            windowEl.style.height = '100vh';
-            currentX = 0;
-            currentY = 0;
-            windowEl.style.transform = `translate(0px, 0px)`;
-        }
-    };
-    maximizeBtn.addEventListener('click', toggleMaximize);
-    dragHandle.addEventListener('dblclick', toggleMaximize);
-
-    activeWindows[app.id] = windowEl;
+  windowEl.style.transition = "none";
+  windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
 };
+
+const endDrag = () => {
+  isDragging = false;
+
+  windowEl.style.transition = "transform 0.2s ease";
+};
+
+dragHandle.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+document.addEventListener('mouseup', endDrag);
+
+dragHandle.addEventListener('touchstart', (e) => {
+  if (e.touches.length > 1) return; 
+
+  const t = e.touches[0];
+  startDrag(t.clientX, t.clientY);
+
+  e.preventDefault();
+  e.stopPropagation();
+}, { passive: false, capture: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!isDragging || e.touches.length > 1) return;
+
+  const t = e.touches[0];
+  moveDrag(t.clientX, t.clientY);
+
+  e.preventDefault();
+  e.stopPropagation();
+}, { passive: false, capture: true });
+
+document.addEventListener('touchend', endDrag);
+document.addEventListener('touchcancel', endDrag); 
+
+const closeBtn = windowEl.querySelector('.close-btn');
+closeBtn.style.minWidth = '44px'; 
+closeBtn.style.minHeight = '44px';
+
+closeBtn.addEventListener('click', () => {
+  windowEl.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+  windowEl.style.opacity = "0";
+  windowEl.style.transform = `translate(${currentX}px, ${currentY}px) scale(0.9)`;
+  setTimeout(() => {
+    closeApp(app.id);
+    if (activeWindows[app.id]) delete activeWindows[app.id];
+    windowEl.remove();
+  }, 250);
+});
+
+const minimizeBtn = windowEl.querySelector('.minimize-btn');
+minimizeBtn.style.minWidth = '44px';
+minimizeBtn.style.minHeight = '44px';
+
+minimizeBtn.addEventListener('click', () => {
+  windowEl.classList.add('hidden');
+});
+
+const maximizeBtn = windowEl.querySelector('.maximize-btn');
+maximizeBtn.style.minWidth = '44px';
+maximizeBtn.style.minHeight = '44px';
+
+const toggleMaximize = () => {
+
+  if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+
+      if (windowEl.requestFullscreen) {
+        windowEl.requestFullscreen();
+      } else if (windowEl.webkitRequestFullscreen) {
+        windowEl.webkitRequestFullscreen();
+      } else if (windowEl.mozRequestFullScreen) {
+        windowEl.mozRequestFullScreen();
+      }
+
+      windowEl.classList.add('maximized');
+      windowEl.style.width = '100vw';
+      windowEl.style.height = '100vh';
+      windowEl.style.transform = 'translate(0px, 0px)';
+    } else {
+
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      }
+
+      windowEl.classList.remove('maximized');
+      windowEl.style.width = '700px';
+      windowEl.style.height = '500px';
+      windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    }
+  } else {
+
+    if (windowEl.classList.contains('maximized')) {
+      windowEl.classList.remove('maximized');
+      windowEl.style.transition = "all 0.25s ease";
+      windowEl.style.width = '700px';
+      windowEl.style.height = '500px';
+      currentX = (window.innerWidth - 700) / 2;
+      currentY = (window.innerHeight - 500) / 2;
+      windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    } else {
+      windowEl.classList.add('maximized');
+      windowEl.style.transition = "all 0.25s ease";
+      windowEl.style.width = '100vw';
+      windowEl.style.height = '100vh';
+      currentX = 0;
+      currentY = 0;
+      windowEl.style.transform = 'translate(0px, 0px)';
+    }
+  }
+};
+
+maximizeBtn.addEventListener('click', toggleMaximize);
+
+let lastTap = 0;
+dragHandle.addEventListener('touchend', (e) => {
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTap;
+
+  if (tapLength < 300 && tapLength > 0) {
+
+    toggleMaximize();
+    e.preventDefault();
+  }
+  lastTap = currentTime;
+});
+
+window.addEventListener('orientationchange', () => {
+
+  setTimeout(() => {
+    if (windowEl.classList.contains('maximized')) {
+      windowEl.style.width = '100vw';
+      windowEl.style.height = '100vh';
+      windowEl.style.transform = 'translate(0px, 0px)';
+    }
+  }, 100);
+});
+
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
+function handleFullscreenChange() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement && 
+      !document.mozFullScreenElement) {
+    windowEl.classList.remove('maximized');
+    windowEl.style.width = '700px';
+    windowEl.style.height = '500px';
+    windowEl.style.transform = `translate(${currentX}px, ${currentY}px)`;
+  }
+}
+
+activeWindows[app.id] = windowEl;
+        };
 
         const createSettingsWindow = () => {
             const windowId = 'window-settings';
