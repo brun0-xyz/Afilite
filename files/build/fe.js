@@ -19,6 +19,13 @@ window.onload = function() {
 
         ],
         "games": [{
+                "id": "appleshooter",
+                "name": "Apple Shooter",
+                "icon": "/files/gms/appleshooter/apple-shooter-2021.webp",
+                "type": "game",
+                "src": "/files/gms/appleshooter/"
+            },
+            {
                 "id": "hollowknight",
                 "name": "Hollow Knight",
                 "icon": "/files/gms/hollowknight/new.png",
